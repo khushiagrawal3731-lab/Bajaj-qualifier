@@ -1,0 +1,103 @@
+package com.example.bajajfinserv;
+
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.http.*;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.HashMap;
+import java.util.Map;
+
+@Component
+public class StartupRunner implements CommandLineRunner {
+
+    private final RestTemplate restTemplate;
+
+    public StartupRunner(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        System.out.println("Starting Bajaj Finserv Health Qualifier Solution...");
+        
+        // Step 1: Generate webhook
+        String generateUrl = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/JAVA";
+        
+        // Request body with required parameters
+        Map<String, String> requestBody = new HashMap<>();
+        requestBody.put("name", "John Doe");
+        requestBody.put("regNo", "REG12347");
+        requestBody.put("email", "john@example.com");
+        
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        
+        HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
+        
+        try {
+            // Send POST request to generate webhook
+            ResponseEntity<Map> response = restTemplate.exchange(
+                generateUrl, HttpMethod.POST, entity, Map.class);
+            
+            if (response.getStatusCode() == HttpStatus.OK) {
+                Map<String, String> responseBody = response.getBody();
+                String webhookUrl = responseBody.get("webhook");
+                String accessToken = responseBody.get("accessToken");
+                
+                System.out.println("Webhook URL received: " + webhookUrl);
+                System.out.println("Access token received: " + accessToken);
+                
+                // Step 2: Determine which question to solve based on regNo
+                String regNo = "REG12347";
+                int lastTwoDigits = Integer.parseInt(regNo.substring(regNo.length() - 2));
+                boolean isOdd = (lastTwoDigits % 2) != 0;
+                
+                // Step 3: Generate the SQL query based on the question
+                String finalQuery;
+                if (isOdd) {
+                    // Question 1 (for odd numbers) - Customer Order Analysis
+                    finalQuery = "SELECT c.customer_id, c.name, c.email, c.location, " +
+                                 "COUNT(o.order_id) AS total_orders " +
+                                 "FROM Customers c " +
+                                 "LEFT JOIN Orders o ON c.customer_id = o.customer_id " +
+                                 "GROUP BY c.customer_id, c.name, c.email, c.location " +
+                                 "ORDER BY total_orders DESC;";
+                } else {
+                    // Question 2 (for even numbers) - Employee Salary Analysis
+                    finalQuery = "SELECT e.employee_id, e.name, e.department, e.salary, " +
+                                 "d.department_name, d.location " +
+                                 "FROM Employees e " +
+                                 "JOIN Departments d ON e.department = d.department_id " +
+                                 "WHERE e.salary > (SELECT AVG(salary) FROM Employees WHERE department = e.department) " +
+                                 "ORDER BY e.department, e.salary DESC;";
+                }
+                
+                System.out.println("Generated SQL Query: " + finalQuery);
+                
+                // Step 4: Submit the solution to the webhook URL
+                String submitUrl = webhookUrl != null ? webhookUrl : 
+                    "https://bfhldevapigw.healthrx.co.in/hiring/testWebhook/JAVA";
+                
+                HttpHeaders submitHeaders = new HttpHeaders();
+                submitHeaders.setContentType(MediaType.APPLICATION_JSON);
+                submitHeaders.set("Authorization", accessToken);
+                
+                Map<String, String> submitBody = new HashMap<>();
+                submitBody.put("finalQuery", finalQuery);
+                
+                HttpEntity<Map<String, String>> submitEntity = new HttpEntity<>(submitBody, submitHeaders);
+                
+                // Send POST request with the solution
+                ResponseEntity<String> submitResponse = restTemplate.exchange(
+                    submitUrl, HttpMethod.POST, submitEntity, String.class);
+                
+                System.out.println("Submission Response: " + submitResponse.getBody());
+                System.out.println("Solution submitted successfully!");
+            }
+        } catch (Exception e) {
+            System.err.println("Error occurred during execution: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
