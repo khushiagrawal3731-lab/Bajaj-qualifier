@@ -21,14 +21,13 @@ public class StartupRunner implements CommandLineRunner {
     public void run(String... args) throws Exception {
         System.out.println("Starting Bajaj Finserv Health Qualifier Solution...");
         
-        // Step 1: Generate webhook
+      
         String generateUrl = "https://bfhldevapigw.healthrx.co.in/hiring/generateWebhook/JAVA";
-        
-        // Request body with required parameters
+      
         Map<String, String> requestBody = new HashMap<>();
-        requestBody.put("name", "John Doe");
-        requestBody.put("regNo", "REG12347");
-        requestBody.put("email", "john@example.com");
+        requestBody.put("name", "KHUSHI AGRAWAL");
+        requestBody.put("regNo", "1RF22EC018");
+        requestBody.put("email", "khushiagrawal3731@gmail.com");
         
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -36,7 +35,7 @@ public class StartupRunner implements CommandLineRunner {
         HttpEntity<Map<String, String>> entity = new HttpEntity<>(requestBody, headers);
         
         try {
-            // Send POST request to generate webhook
+            
             ResponseEntity<Map> response = restTemplate.exchange(
                 generateUrl, HttpMethod.POST, entity, Map.class);
             
@@ -48,15 +47,15 @@ public class StartupRunner implements CommandLineRunner {
                 System.out.println("Webhook URL received: " + webhookUrl);
                 System.out.println("Access token received: " + accessToken);
                 
-                // Step 2: Determine which question to solve based on regNo
-                String regNo = "REG12347";
+                
+                String regNo = "1RF22EC018";
                 int lastTwoDigits = Integer.parseInt(regNo.substring(regNo.length() - 2));
                 boolean isOdd = (lastTwoDigits % 2) != 0;
                 
-                // Step 3: Generate the SQL query based on the question
+    
                 String finalQuery;
                 if (isOdd) {
-                    // Question 1 (for odd numbers) - Customer Order Analysis
+                    
                     finalQuery = "SELECT c.customer_id, c.name, c.email, c.location, " +
                                  "COUNT(o.order_id) AS total_orders " +
                                  "FROM Customers c " +
@@ -64,7 +63,7 @@ public class StartupRunner implements CommandLineRunner {
                                  "GROUP BY c.customer_id, c.name, c.email, c.location " +
                                  "ORDER BY total_orders DESC;";
                 } else {
-                    // Question 2 (for even numbers) - Employee Salary Analysis
+                    
                     finalQuery = "SELECT e.employee_id, e.name, e.department, e.salary, " +
                                  "d.department_name, d.location " +
                                  "FROM Employees e " +
@@ -75,7 +74,7 @@ public class StartupRunner implements CommandLineRunner {
                 
                 System.out.println("Generated SQL Query: " + finalQuery);
                 
-                // Step 4: Submit the solution to the webhook URL
+                
                 String submitUrl = webhookUrl != null ? webhookUrl : 
                     "https://bfhldevapigw.healthrx.co.in/hiring/testWebhook/JAVA";
                 
@@ -100,4 +99,5 @@ public class StartupRunner implements CommandLineRunner {
             e.printStackTrace();
         }
     }
+
 }
